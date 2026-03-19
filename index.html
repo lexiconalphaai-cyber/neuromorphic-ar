@@ -330,6 +330,126 @@
     }
 
     /* ══════════════════════════════
+       CAMERA PERMISSION MODAL
+    ══════════════════════════════ */
+    #cam-permission {
+      display: none; position: fixed; inset: 0; z-index: 250;
+      background: rgba(2,4,8,.92);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      align-items: center; justify-content: center;
+      padding: 32px;
+    }
+    #cam-permission.show { display: flex; }
+
+    .perm-card {
+      background: #050c13;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px 28px;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 18px;
+      max-width: 320px; width: 100%;
+      box-shadow: 0 0 60px rgba(0,232,245,.1), 0 24px 60px rgba(0,0,0,.7);
+    }
+
+    .perm-icon {
+      width: 68px; height: 68px;
+      border-radius: 50%;
+      background: var(--dim);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      position: relative;
+    }
+    .perm-icon svg { width: 30px; height: 30px; stroke: var(--cyan); }
+    .perm-icon-ring {
+      position: absolute; inset: -6px;
+      border-radius: 50%;
+      border: 1px solid rgba(0,232,245,.2);
+      animation: ringPulse 2s ease-out infinite;
+    }
+
+    .perm-title {
+      font-family: 'Orbitron', monospace;
+      font-size: 15px; font-weight: 700;
+      color: #fff; letter-spacing: .05em;
+      text-align: center;
+    }
+    .perm-title em { color: var(--cyan); font-style: normal; }
+
+    .perm-desc {
+      font-size: 13px; color: var(--muted);
+      text-align: center; line-height: 1.65;
+    }
+    .perm-desc strong { color: var(--text); font-weight: 500; }
+
+    .perm-bullets {
+      width: 100%;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .perm-bullet {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 12px; color: var(--muted);
+    }
+    .perm-bullet-dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--cyan); opacity: .6; flex-shrink: 0;
+    }
+
+    .btn-allow {
+      width: 100%;
+      padding: 15px;
+      border: none; border-radius: 12px;
+      background: var(--cyan); color: #000;
+      font-family: 'Orbitron', monospace;
+      font-size: 12px; font-weight: 700;
+      letter-spacing: .16em; text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 0 0 22px rgba(0,232,245,.35);
+      transition: transform .12s, box-shadow .15s;
+      -webkit-appearance: none;
+    }
+    .btn-allow:active { transform: scale(.97); }
+
+    .btn-deny {
+      font-size: 11px; color: var(--muted);
+      background: none; border: none;
+      cursor: pointer; letter-spacing: .08em;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    /* denied state */
+    #cam-denied {
+      display: none; position: fixed; inset: 0; z-index: 260;
+      background: var(--ink);
+      align-items: center; justify-content: center;
+      flex-direction: column; gap: 18px;
+      padding: 40px 32px; text-align: center;
+    }
+    #cam-denied.show { display: flex; }
+    #cam-denied h2 {
+      font-family: 'Orbitron', monospace;
+      font-size: 15px; color: #f04f4f; letter-spacing: .06em;
+    }
+    #cam-denied p { font-size: 13px; color: var(--muted); line-height: 1.65; max-width: 300px; }
+    .denied-steps {
+      background: var(--dim); border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px 20px;
+      text-align: left; max-width: 300px; width: 100%;
+    }
+    .denied-steps p { font-size: 11px; color: var(--text); line-height: 1.8; }
+    .btn-retry {
+      padding: 12px 28px;
+      border: 1px solid var(--border); border-radius: 10px;
+      background: var(--dim); color: var(--cyan);
+      font-family: 'Orbitron', monospace;
+      font-size: 10px; font-weight: 600;
+      letter-spacing: .14em; text-transform: uppercase;
+      cursor: pointer; -webkit-appearance: none;
+    }
+
+    /* ══════════════════════════════
        UNSUPPORTED
     ══════════════════════════════ */
     #unsupported {
@@ -354,7 +474,53 @@
 </head>
 <body>
 
-<!-- ════════ UNSUPPORTED ════════ -->
+<!-- ════════ CAMERA PERMISSION MODAL ════════ -->
+<div id="cam-permission">
+  <div class="perm-card">
+
+    <div class="perm-icon">
+      <div class="perm-icon-ring"></div>
+      <!-- Camera icon -->
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+    </div>
+
+    <div class="perm-title">Camera <em>Access</em><br/>Required</div>
+
+    <div class="perm-desc">
+      This AR experience needs your <strong>camera</strong> to detect the QR code on your business card and display the 3D brain on top of it.
+    </div>
+
+    <div class="perm-bullets">
+      <div class="perm-bullet"><div class="perm-bullet-dot"></div>Camera is used only for AR — nothing is recorded</div>
+      <div class="perm-bullet"><div class="perm-bullet-dot"></div>No images or video are ever stored or sent</div>
+      <div class="perm-bullet"><div class="perm-bullet-dot"></div>Access stops when you leave or go back</div>
+    </div>
+
+    <button class="btn-allow" id="btn-allow-cam">Allow Camera</button>
+    <button class="btn-deny" id="btn-deny-cam">Not now</button>
+  </div>
+</div>
+
+<!-- ════════ CAMERA DENIED ════════ -->
+<div id="cam-denied">
+  <div style="font-size:46px">🚫</div>
+  <h2>Camera Blocked</h2>
+  <p>Camera permission was denied. To use the AR experience, please enable it manually.</p>
+  <div class="denied-steps">
+    <p>
+      <strong style="color:var(--text)">Android Chrome</strong><br/>
+      Settings → Site Settings → Camera → Allow<br/><br/>
+      <strong style="color:var(--text)">iOS Safari</strong><br/>
+      Settings → Safari → Camera → Allow
+    </p>
+  </div>
+  <button class="btn-retry" id="btn-retry-cam">Try Again</button>
+</div>
+
+
 <div id="unsupported">
   <div style="font-size:48px">📱</div>
   <h2>Open on Mobile</h2>
@@ -515,7 +681,7 @@
         Back
       </button>
     </div>
-    <div class="info-line">MSDSM · Maersk: Betting on Blockchain · Case 3</div>
+    <div class="info-line">MSDSM · Neuromorphic AR</div>
   </div>
 
 </div>
@@ -586,24 +752,71 @@ const scanGuide   = document.getElementById('scan-guide');
 const statusBadge = document.getElementById('status-badge');
 const foundHint   = document.getElementById('found-hint');
 const hintText    = document.getElementById('hint-text');
+const permModal   = document.getElementById('cam-permission');
+const btnAllow    = document.getElementById('btn-allow-cam');
+const btnDeny     = document.getElementById('btn-deny-cam');
+const deniedScreen= document.getElementById('cam-denied');
+const btnRetry    = document.getElementById('btn-retry-cam');
 
 let arSystem = null;
 
-// ── Start AR ──────────────────────────────────
-btnStart.addEventListener('click', async () => {
+// ── Step 1: Splash → Permission modal ─────────
+btnStart.addEventListener('click', () => {
+  permModal.classList.add('show');
+});
+
+// ── Step 2a: User allows — request camera ──────
+btnAllow.addEventListener('click', async () => {
+  permModal.classList.remove('show');
+
+  try {
+    // Explicitly request camera — shows native browser prompt
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment' }
+    });
+    // Permission granted — stop the test stream, MindAR will take over
+    stream.getTracks().forEach(t => t.stop());
+    launchAR();
+  } catch (err) {
+    // Denied or dismissed
+    console.warn('Camera permission denied:', err.name);
+    deniedScreen.classList.add('show');
+  }
+});
+
+// ── Step 2b: User taps "Not now" ───────────────
+btnDeny.addEventListener('click', () => {
+  permModal.classList.remove('show');
+});
+
+// ── Step 2c: Retry after denial ────────────────
+btnRetry.addEventListener('click', async () => {
+  deniedScreen.classList.remove('show');
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment' }
+    });
+    stream.getTracks().forEach(t => t.stop());
+    launchAR();
+  } catch {
+    deniedScreen.classList.add('show');
+  }
+});
+
+// ── Launch AR (after permission granted) ───────
+function launchAR() {
   splash.classList.add('exit');
   setTimeout(() => {
     splash.style.display = 'none';
     arScreen.classList.add('active');
   }, 520);
 
-  // Wait for scene to be ready, then start MindAR
   const scene = document.getElementById('ar-scene');
   scene.addEventListener('loaded', () => {
     arSystem = scene.systems['mindar-image-system'];
     if (arSystem) arSystem.start();
   }, { once: true });
-});
+}
 
 // ── Target found / lost events ────────────────
 document.addEventListener('targetFound', () => {
@@ -628,7 +841,6 @@ btnStop.addEventListener('click', () => {
   arScreen.classList.remove('active');
   splash.style.display = 'flex';
   splash.classList.remove('exit');
-  // reset state
   statusBadge.textContent = 'Scanning…';
   statusBadge.classList.remove('found');
   scanGuide.classList.remove('hidden');

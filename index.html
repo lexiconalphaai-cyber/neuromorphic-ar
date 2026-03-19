@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta name="description" content="Neuromorphic AR – Interactive 3D Brain Experience" />
+  <title>Neuromorphic AR · Brain</title>
+
+  <!-- model-viewer by Google (handles ARCore + ARKit surface AR) -->
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg:        #020408;
+      --surface:   #050d14;
+      --accent:    #00e5ff;
+      --accent2:   #7b2fff;
+      --glow:      0 0 18px #00e5ff55;
+      --glow-lg:   0 0 60px #00e5ff33;
+      --text:      #cce8ef;
+      --muted:     #4a7080;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%; height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      overflow: hidden;
+    }
+
+    /* ── Loader ─────────────────────────────────── */
+    #loader {
+      position: fixed; inset: 0; z-index: 100;
+      background: var(--bg);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 24px;
+      transition: opacity .6s ease, visibility .6s;
+    }
+    #loader.hidden { opacity: 0; visibility: hidden; }
+
+    .loader-ring {
+      width: 72px; height: 72px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      border-top-color: var(--accent);
+      border-right-color: var(--accent2);
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loader-text {
+      font-family: 'Orbitron', monospace;
+      font-size: 11px;
+      letter-spacing: .35em;
+      color: var(--muted);
+      text-transform: uppercase;
+      animation: blink 1.4s ease-in-out infinite;
+    }
+    @keyframes blink { 50% { opacity: .3; } }
+
+    /* ── Background grid ──────────────────────────── */
+    #bg-grid {
+      position: fixed; inset: 0; z-index: 0;
+      background-image:
+        linear-gradient(rgba(0,229,255,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,255,.04) 1px, transparent 1px);
+      background-size: 44px 44px;
+      pointer-events: none;
+    }
+
+    /* ── Ambient orbs ──────────────────────────────── */
+    .orb {
+      position: fixed; border-radius: 50%;
+      filter: blur(80px); opacity: .18;
+      pointer-events: none; z-index: 0;
+    }
+    .orb-1 { width: 380px; height: 380px; background: var(--accent2); top: -120px; right: -80px; }
+    .orb-2 { width: 300px; height: 300px; background: var(--accent);  bottom: -100px; left: -60px; }
+
+    /* ── Header ──────────────────────────────────── */
+    header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+      padding: 20px 28px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: linear-gradient(to bottom, rgba(2,4,8,.9), transparent);
+    }
+    .logo {
+      font-family: 'Orbitron', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .2em;
+      color: var(--accent);
+      text-shadow: var(--glow);
+    }
+    .badge {
+      font-size: 10px;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border: 1px solid #1a3040;
+      border-radius: 20px;
+      padding: 4px 12px;
+    }
+
+    /* ── model-viewer ────────────────────────────── */
+    model-viewer {
+      position: fixed; inset: 0; z-index: 1;
+      width: 100%; height: 100%;
+      background: transparent;
+      --poster-color: transparent;
+    }
+
+    /* ── AR Button override ──────────────────────── */
+    model-viewer::part(default-ar-button) {
+      display: none; /* we use our own */
+    }
+
+    /* ── Bottom HUD ─────────────────────────────── */
+    #hud {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 10;
+      padding: 20px 24px 36px;
+      background: linear-gradient(to top, rgba(2,4,8,.92), transparent);
+      display: flex; flex-direction: column; align-items: center; gap: 16px;
+    }
+
+    .hud-title {
+      font-family: 'Orbitron', monospace;
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: .08em;
+      color: #fff;
+      text-shadow: var(--glow-lg);
+      text-align: center;
+    }
+    .hud-title span { color: var(--accent); }
+
+    .hud-sub {
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .btn-row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+
+    .btn-ar {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--accent);
+      color: #000;
+      font-family: 'Orbitron', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      border: none; border-radius: 6px;
+      padding: 13px 26px;
+      cursor: pointer;
+      box-shadow: 0 0 24px #00e5ff55;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .btn-ar:hover { transform: translateY(-2px); box-shadow: 0 0 40px #00e5ffaa; }
+    .btn-ar:active { transform: scale(.97); }
+
+    .btn-ar.secondary {
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      box-shadow: none;
+    }
+    .btn-ar.secondary:hover { background: rgba(0,229,255,.08); }
+
+    /* ── Hint ────────────────────────────────────── */
+    .hint {
+      font-size: 11px;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.6;
+    }
+    .hint strong { color: var(--text); font-weight: 400; }
+
+    /* ── Info pill ───────────────────────────────── */
+    #info-pill {
+      position: fixed; top: 70px; left: 50%; transform: translateX(-50%);
+      z-index: 10;
+      background: rgba(0,229,255,.08);
+      border: 1px solid rgba(0,229,255,.2);
+      border-radius: 30px;
+      padding: 6px 18px;
+      font-size: 11px;
+      letter-spacing: .1em;
+      color: var(--accent);
+      opacity: 0;
+      animation: fadeInDown .6s ease 1.5s forwards;
+    }
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateX(-50%) translateY(-8px); }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
+    /* ── AR not supported notice ──────────────────── */
+    #no-ar {
+      display: none;
+      position: fixed; inset: 0; z-index: 50;
+      background: rgba(2,4,8,.92);
+      align-items: center; justify-content: center;
+      flex-direction: column; gap: 20px;
+      padding: 40px;
+      text-align: center;
+    }
+    #no-ar .icon { font-size: 48px; }
+    #no-ar h2 { font-family: 'Orbitron', monospace; font-size: 18px; color: var(--accent); }
+    #no-ar p  { color: var(--muted); font-size: 14px; line-height: 1.6; max-width: 320px; }
+
+    /* ── Progress bar ─────────────────────────────── */
+    .progress-bar {
+      width: 140px; height: 3px;
+      background: #0d1e28;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent2), var(--accent));
+      border-radius: 3px;
+      transition: width .2s;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Loader -->
+  <div id="loader">
+    <div class="loader-ring"></div>
+    <div class="progress-bar"><div class="progress-bar-fill" id="prog" style="width:0%"></div></div>
+    <div class="loader-text">Initialising neural model</div>
+  </div>
+
+  <!-- Background -->
+  <div id="bg-grid"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+
+  <!-- Header -->
+  <header>
+    <div class="logo">NEURO·AR</div>
+    <div class="badge">360° Surface AR</div>
+  </header>
+
+  <!-- Info pill -->
+  <div id="info-pill">⟳ Drag to rotate &nbsp;·&nbsp; Pinch to scale</div>
+
+  <!-- AR not supported notice -->
+  <div id="no-ar">
+    <div class="icon">📱</div>
+    <h2>Open on Mobile</h2>
+    <p>Surface AR requires an ARCore (Android) or ARKit (iOS) capable device. Scan the QR code with your smartphone camera.</p>
+    <button class="btn-ar" onclick="document.getElementById('no-ar').style.display='none'">View 3D Model</button>
+  </div>
+
+  <!-- ─── MODEL VIEWER ─────────────────────────────
+       Replace "assets/brain.glb" with your brain model path.
+       Free brain GLB: https://poly.pizza or https://sketchfab.com/3d-models/human-brain
+       ──────────────────────────────────────────── -->
+  <model-viewer
+    id="mv"
+    src="assets/brain.glb"
+    alt="Interactive 3D Human Brain"
+
+    ar
+    ar-modes="webxr scene-viewer quick-look"
+    ar-scale="fixed"
+    ar-placement="floor"
+
+    camera-controls
+    auto-rotate
+    auto-rotate-delay="1000"
+    rotation-per-second="20deg"
+
+    shadow-intensity="1"
+    shadow-softness="0.8"
+    exposure="1.1"
+    environment-image="neutral"
+
+    min-camera-orbit="auto auto 0.5m"
+    max-camera-orbit="auto auto 4m"
+
+    interaction-prompt="none"
+  >
+    <!-- Custom AR activation slot -->
+    <button slot="ar-button" class="btn-ar" id="ar-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M2 12l10-10 10 10M5 9v10h14V9"/>
+      </svg>
+      Place in Your Space
+    </button>
+  </model-viewer>
+
+  <!-- Bottom HUD -->
+  <div id="hud">
+    <div class="hud-title">HUMAN <span>BRAIN</span></div>
+    <div class="hud-sub">Neuromorphic · 360° Interactive Model</div>
+    <div class="btn-row">
+      <button class="btn-ar" id="launch-ar-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/>
+          <line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/>
+          <line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/>
+        </svg>
+        Launch AR
+      </button>
+      <button class="btn-ar secondary" id="rotate-btn">Auto-Rotate</button>
+    </div>
+    <div class="hint">
+      <strong>Android</strong> – Chrome · <strong>iOS</strong> – Safari<br/>
+      Point at a flat surface and tap to place
+    </div>
+  </div>
+
+  <script>
+    const mv       = document.getElementById('mv');
+    const loader   = document.getElementById('loader');
+    const prog     = document.getElementById('prog');
+    const launchBtn = document.getElementById('launch-ar-btn');
+    const rotateBtn = document.getElementById('rotate-btn');
+    let autoRotate  = true;
+
+    // Progress
+    mv.addEventListener('progress', e => {
+      prog.style.width = (e.detail.totalProgress * 100) + '%';
+    });
+
+    // Hide loader when ready
+    mv.addEventListener('load', () => {
+      setTimeout(() => loader.classList.add('hidden'), 500);
+
+      // Check AR support
+      mv.canActivateAR.then(supported => {
+        if (!supported) {
+          document.getElementById('no-ar').style.display = 'flex';
+        }
+      }).catch(() => {
+        // desktop – show 3D only, hide AR button
+        document.getElementById('launch-ar-btn').style.display = 'none';
+      });
+    });
+
+    // Launch AR
+    launchBtn.addEventListener('click', () => mv.activateAR());
+
+    // Toggle auto-rotate
+    rotateBtn.addEventListener('click', () => {
+      autoRotate = !autoRotate;
+      mv.setAttribute('auto-rotate', autoRotate ? '' : null);
+      rotateBtn.textContent = autoRotate ? 'Auto-Rotate' : 'Manual Mode';
+      rotateBtn.style.borderColor = autoRotate ? 'var(--accent)' : 'var(--muted)';
+      rotateBtn.style.color       = autoRotate ? 'var(--accent)' : 'var(--muted)';
+    });
+
+    // Fallback: if model takes > 8s, hide loader anyway
+    setTimeout(() => loader.classList.add('hidden'), 8000);
+  </script>
+</body>
+</html>

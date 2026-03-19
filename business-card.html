@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Business Card – Print</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+
+  <!-- QR code library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <style>
+    :root {
+      --bg:     #020408;
+      --accent: #00e5ff;
+      --purple: #7b2fff;
+      --text:   #e0f4f8;
+      --muted:  #4a7080;
+
+      /* Standard business card: 3.5in × 2in at 96dpi */
+      --card-w: 336px;
+      --card-h: 192px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #111;
+      font-family: 'Inter', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      gap: 32px;
+      padding: 40px 20px;
+    }
+
+    h1 {
+      color: var(--accent);
+      font-family: 'Orbitron', monospace;
+      font-size: 14px;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+    }
+
+    /* ── Card wrapper (shows both sides) ──────── */
+    .card-pair {
+      display: flex;
+      gap: 28px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    /* ── Shared card base ──────────────────────── */
+    .card {
+      width: var(--card-w);
+      height: var(--card-h);
+      border-radius: 10px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 0 0 1px rgba(0,229,255,.15), 0 20px 60px rgba(0,0,0,.8);
+    }
+
+    /* ── Front ─────────────────────────────────── */
+    .card-front {
+      background: var(--bg);
+    }
+
+    /* circuit-trace lines */
+    .card-front::before {
+      content: '';
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,229,255,.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,255,.06) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+
+    /* glow orbs */
+    .card-front::after {
+      content: '';
+      position: absolute;
+      width: 160px; height: 160px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(123,47,255,.35), transparent 70%);
+      top: -60px; right: -40px;
+      pointer-events: none;
+    }
+
+    .card-front .accent-orb {
+      position: absolute;
+      width: 100px; height: 100px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0,229,255,.2), transparent 70%);
+      bottom: -30px; left: 20px;
+    }
+
+    /* corner brackets */
+    .bracket {
+      position: absolute;
+      width: 14px; height: 14px;
+      border-color: rgba(0,229,255,.35);
+      border-style: solid;
+    }
+    .bracket-tl { top: 10px; left: 10px; border-width: 1.5px 0 0 1.5px; }
+    .bracket-tr { top: 10px; right: 10px; border-width: 1.5px 1.5px 0 0; }
+    .bracket-bl { bottom: 10px; left: 10px; border-width: 0 0 1.5px 1.5px; }
+    .bracket-br { bottom: 10px; right: 10px; border-width: 0 1.5px 1.5px 0; }
+
+    /* front content */
+    .front-content {
+      position: absolute; inset: 0;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      z-index: 1;
+    }
+
+    .front-name {
+      font-family: 'Orbitron', monospace;
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: .04em;
+      color: #fff;
+    }
+    .front-name span { color: var(--accent); }
+
+    .front-role {
+      font-size: 9px;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    .front-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+
+    .front-details {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .detail-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 8.5px;
+      color: var(--muted);
+      letter-spacing: .04em;
+    }
+    .detail-row .dot {
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      background: var(--accent);
+      opacity: .6;
+      flex-shrink: 0;
+    }
+
+    .front-logo {
+      font-family: 'Orbitron', monospace;
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: .2em;
+      color: rgba(0,229,255,.4);
+    }
+
+    /* ── Back ──────────────────────────────────── */
+    .card-back {
+      background: linear-gradient(135deg, #04090f 0%, #020408 60%, #07061a 100%);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 20px;
+    }
+
+    .card-back::before {
+      content: '';
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(123,47,255,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(123,47,255,.04) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    .back-left {
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-width: 160px;
+    }
+
+    .back-ar-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(0,229,255,.1);
+      border: 1px solid rgba(0,229,255,.25);
+      border-radius: 4px;
+      padding: 3px 8px;
+      font-size: 8px;
+      letter-spacing: .15em;
+      color: var(--accent);
+      text-transform: uppercase;
+      width: fit-content;
+    }
+    .ar-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+    @keyframes pulse { 50% { transform: scale(1.5); opacity: .5; } }
+
+    .back-headline {
+      font-family: 'Orbitron', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.3;
+    }
+    .back-headline span { color: var(--accent); }
+
+    .back-instruction {
+      font-size: 8px;
+      color: var(--muted);
+      line-height: 1.5;
+      letter-spacing: .03em;
+    }
+
+    /* QR container */
+    .qr-wrap {
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      flex-shrink: 0;
+    }
+
+    #qrcode {
+      width: 88px !important;
+      height: 88px !important;
+      background: #fff;
+      border-radius: 6px;
+      padding: 4px;
+      box-shadow: 0 0 20px rgba(0,229,255,.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #qrcode canvas, #qrcode img {
+      width: 80px !important;
+      height: 80px !important;
+      display: block;
+    }
+
+    .qr-label {
+      font-size: 7px;
+      letter-spacing: .1em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    /* ── Print button ──────────────────────────── */
+    .controls {
+      display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
+    }
+
+    .btn {
+      font-family: 'Orbitron', monospace;
+      font-size: 10px;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      padding: 10px 22px;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .btn:hover { transform: translateY(-2px); }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+      font-weight: 700;
+      box-shadow: 0 0 20px rgba(0,229,255,.4);
+    }
+    .btn-secondary {
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid rgba(0,229,255,.4);
+    }
+
+    .url-config {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      background: rgba(0,229,255,.05);
+      border: 1px solid rgba(0,229,255,.15);
+      border-radius: 8px;
+      padding: 10px 16px;
+      max-width: 480px;
+      width: 100%;
+    }
+    .url-config label {
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .url-config input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      font-family: monospace;
+      font-size: 11px;
+      color: var(--accent);
+      min-width: 0;
+    }
+    .url-config button {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      padding: 5px 12px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    /* ── Print Styles ─────────────────────────── */
+    @media print {
+      body { background: white; padding: 0; gap: 0; min-height: unset; }
+      h1, .controls, .url-config { display: none !important; }
+      .card-pair { gap: 10mm; }
+
+      .card {
+        box-shadow: none;
+        border: 0.5pt solid #ccc;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+
+      /* print both sides on separate pages in duplex mode */
+      .card-front { page-break-after: avoid; }
+      .card-back   { page-break-before: avoid; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Neuromorphic AR · Business Card</h1>
+
+  <!-- URL config -->
+  <div class="url-config">
+    <label>AR URL</label>
+    <input type="text" id="ar-url" value="https://neuromorphic-ar.netlify.app" />
+    <button onclick="regenerateQR()">Update QR</button>
+  </div>
+
+  <div class="card-pair">
+
+    <!-- ── FRONT SIDE ─────────────────────────── -->
+    <div class="card card-front">
+      <div class="accent-orb"></div>
+      <div class="bracket bracket-tl"></div>
+      <div class="bracket bracket-tr"></div>
+      <div class="bracket bracket-bl"></div>
+      <div class="bracket bracket-br"></div>
+
+      <div class="front-content">
+        <div>
+          <!-- ✏️  Edit your name & title here -->
+          <div class="front-name">DR. <span>JANE DOE</span></div>
+          <div class="front-role">Neuroscience Researcher · PhD</div>
+        </div>
+
+        <div class="front-bottom">
+          <div class="front-details">
+            <!-- ✏️  Edit your contact details here -->
+            <div class="detail-row"><span class="dot"></span>jane.doe@university.edu</div>
+            <div class="detail-row"><span class="dot"></span>+91 98765 43210</div>
+            <div class="detail-row"><span class="dot"></span>linkedin.com/in/janedoe</div>
+            <div class="detail-row"><span class="dot"></span>Department of Neuroscience</div>
+          </div>
+          <div class="front-logo">NEURO·AR</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── BACK SIDE ──────────────────────────── -->
+    <div class="card card-back">
+      <div class="bracket bracket-tl"></div>
+      <div class="bracket bracket-tr"></div>
+      <div class="bracket bracket-bl"></div>
+      <div class="bracket bracket-br"></div>
+
+      <div class="back-left">
+        <div class="back-ar-badge">
+          <span class="ar-dot"></span> AR Experience
+        </div>
+        <div class="back-headline">SCAN TO SEE<br/>THE <span>BRAIN</span><br/>IN YOUR SPACE</div>
+        <div class="back-instruction">
+          Point your phone camera at this QR code.<br/>
+          Place the 3D brain model on any flat surface<br/>
+          and explore it in augmented reality.
+        </div>
+      </div>
+
+      <div class="qr-wrap">
+        <div id="qrcode"></div>
+        <div class="qr-label">Scan me</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <button class="btn btn-primary" onclick="window.print()">🖨 Print Cards</button>
+    <button class="btn btn-secondary" onclick="editCard()">✏️ Edit Details</button>
+  </div>
+
+  <script>
+    // ── Generate QR ───────────────────────────────
+    let qrInstance = null;
+
+    function generateQR(url) {
+      document.getElementById('qrcode').innerHTML = '';
+      qrInstance = new QRCode(document.getElementById('qrcode'), {
+        text: url,
+        width: 80, height: 80,
+        colorDark: '#000000',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.H
+      });
+    }
+
+    function regenerateQR() {
+      const url = document.getElementById('ar-url').value.trim();
+      if (url) generateQR(url);
+    }
+
+    // Generate on load
+    generateQR(document.getElementById('ar-url').value);
+
+    // ── Edit card ─────────────────────────────────
+    function editCard() {
+      const name  = prompt('Full name:', 'DR. JANE DOE');
+      const title = prompt('Title / Role:', 'Neuroscience Researcher · PhD');
+      const email = prompt('Email:', 'jane.doe@university.edu');
+      const phone = prompt('Phone:', '+91 98765 43210');
+
+      if (name)  document.querySelector('.front-name').innerHTML =
+        name.toUpperCase().replace(' ', ' <span>').replace(/(?<=<span>)(.*)/, '$1</span>');
+
+      if (title) document.querySelector('.front-role').textContent = title;
+
+      const rows = document.querySelectorAll('.detail-row');
+      if (email && rows[0]) rows[0].innerHTML = `<span class="dot"></span>${email}`;
+      if (phone && rows[1]) rows[1].innerHTML = `<span class="dot"></span>${phone}`;
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+[build]
+  publish = "."
+
+# ── Security & AR Camera Headers ─────────────────────────────────────────
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Cross-Origin-Opener-Policy    = "same-origin"
+    Cross-Origin-Embedder-Policy  = "require-corp"
+    Permissions-Policy            = "camera=(self), microphone=()"
+    X-Frame-Options               = "SAMEORIGIN"
+    X-Content-Type-Options        = "nosniff"
+    Referrer-Policy               = "strict-origin-when-cross-origin"
+
+# ── Cache: HTML (always fresh) ────────────────────────────────────────────
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# ── Cache: 3D models (long cache — fingerprint filenames if you update) ───
+[[headers]]
+  for = "/assets/*.glb"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/assets/*.gltf"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# ── Cache: Images & media ─────────────────────────────────────────────────
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
+
+# ── SPA fallback (optional — safe to keep) ────────────────────────────────
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200
